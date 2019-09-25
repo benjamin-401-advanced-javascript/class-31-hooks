@@ -1,58 +1,70 @@
-import React from 'react';
-
+import React, { useReducer } from 'react';
 import Auth from '../auth/auth';
-
 import styles from './todo.module.scss';
 
-class Todo extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      item: '',
-      toDoItems: [],
-    };
-  }
+const initialState = {
+  item: '',
+  toDoItems: [],
+};
 
-  handleForm = (e) => {
-    e.preventDefault();
-    e.target.reset();
-    const item = { title: this.state.item, status: false };
-    this.setState({ toDoItems: [...this.state.toDoItems, item] });
-  };
-
-  handleChange = (e) => {
-    this.setState({ item: e.target.value });
-  }
-
-  toggle = (e, id) => {
-    e.preventDefault();
-    const toDoItems = this.state.toDoItems.map((item, idx) => (idx === id ? { title: item.title, status: !item.status } : item));
-    this.setState({ toDoItems });
-  };
-
-  render() {
-    return (
-      <section className={styles.todo}>
-
-        <Auth capability="read">
-          {this.state.toDoItems.map((item, idx) => <div key={idx} onClick={(e) => this.toggle(e, idx)}>
-              <span className={styles[`complete-${item.status}`]}> {item.title} </span>
-            </div>)}
-        </Auth>
-
-        <Auth capability="create">
-          <form onSubmit={this.handleForm}>
-            <input
-              onChange={this.handleChange}
-              name="item"
-              placeholder="Add To Do List Item Here"
-            />
-          </form>
-        </Auth>
-
-      </section>
-    );
+function reducer(state, action) {
+  // state = the current state, before any changes are made
+  // action = object with a {type: "", data: {} }
+  switch (action.type) {
+    case 'update item':
+      return { ...state, item: action.data };
+    case 'add todo item':
+      return { ...state, toDoItems: action.data };
+    case 'toggle todo item':
+      return { ...state, toDoItems: action.data };
+    default:
+      throw new Error();
   }
 }
 
-export default Todo;
+export default function Todo(props) {
+  const [state, dispatch] = useReducer(reducer, initialState);
+
+  function handleFormSubmit(e) {
+    e.preventDefault();
+    e.target.reset();
+    const item = { title: state.item, status: false };
+    // setState({ toDoItems: [...state.toDoItems, item] });
+    dispatch({ type: 'add todo item', data: [...state.toDoItems, item] });
+  }
+
+  function handleChange(e) {
+    dispatch({ type: 'update item', data: e.target.value });
+    // setState({ item: e.target.value });
+  }
+
+  function toggle(e, id) {
+    e.preventDefault();
+    const toDoItems = state.toDoItems.map((item, idx) => (idx === id
+      ? { title: item.title, status: !item.status } : item));
+    // setState({ toDoItems });
+    dispatch({ type: 'toggle todo item', data: toDoItems });
+  }
+
+  return (
+    <section className={styles.todo}>
+
+      <Auth capability="read">
+        {state.toDoItems.map((item, idx) => <div key={idx} onClick={(e) => toggle(e, idx)}>
+          <span className={styles[`complete-${item.status}`]}> {item.title} </span>
+        </div>)}
+      </Auth>
+
+      <Auth capability="create">
+        <form onSubmit={handleFormSubmit}>
+          <input
+            onChange={handleChange}
+            name="item"
+            placeholder="Add To Do List Item Here"
+          />
+        </form>
+      </Auth>
+
+    </section>
+  );
+}
